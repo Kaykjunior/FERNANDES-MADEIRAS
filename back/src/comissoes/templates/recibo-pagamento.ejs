@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Lucida Console', monospace;
+            background: white;
+            padding: 10mm;
+            color: #000000;
+            font-size: 10pt;
+            line-height: 1.2;
+        }
+
+        .relatorio {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+        }
+
+        /* Cabeçalho do Sistema - Estilo Futura */
+        .sistema-header {
+            background: #bbbbbb;
+            color: white;
+            padding: 3mm 5mm;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #cccccc;
+        }
+
+        .sistema-header .site {
+            color: #000000;
+        }
+
+        .sistema-header .data {
+            color: #000000;
+        }
+
+        .sistema-header .pagina {
+            color: #000000;
+        }
+
+        /* Título do Relatório */
+        .titulo-relatorio {
+            text-align: center;
+            margin: 5mm 0 3mm 0;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .titulo-relatorio h1 {
+            font-size: 14pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1mm;
+        }
+
+        .titulo-relatorio .subtitulo {
+            font-size: 10pt;
+            border-top: 1px dashed #000000;
+            border-bottom: 1px dashed #000000;
+            padding: 2mm 0;
+            margin: 2mm 0;
+        }
+
+        /* Informações do Documento */
+        .documento-info {
+            display: flex;
+            gap: 10mm;
+            margin: 3mm 0;
+            padding: 2mm;
+            border: 1px solid #000000;
+            background: #f0f0f0;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Cabeçalho do Vendedor */
+        .vendedor-header {
+            margin: 4mm 0 2mm 0;
+            padding: 2mm;
+            background: #e0e0e0;
+            border-left: 5px solid #000000;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .vendedor-header .codigo {
+            color: #333333;
+            margin-right: 5mm;
+        }
+
+        .vendedor-header .nome {
+            font-size: 11pt;
+        }
+
+        /* Tabela - Estilo Exatamente como na imagem */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+            margin: 2mm 0;
+        }
+
+        th {
+            background: #d0d0d0;
+            color: #000000;
+            padding: 2mm;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #000000;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1.5mm 2mm;
+            border: 1px solid #999999;
+        }
+
+        /* Linhas de totais por vendedor - Estilo da imagem */
+        .vendedor-total {
+            background: #f0f0f0;
+            font-weight: bold;
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+        }
+
+        .vendedor-total td {
+            border: 1px solid #666666;
+        }
+
+        .vendedor-total .label {
+            text-align: right;
+            padding-right: 5mm;
+        }
+
+        .vendedor-total .valor {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Percentual de comissão */
+        .comissao-info {
+            text-align: right;
+            margin: 1mm 0 3mm 0;
+            font-weight: bold;
+        }
+
+        /* Totais gerais */
+        .totais-gerais {
+            margin-top: 5mm;
+            border-top: 3px double #000000;
+            padding-top: 2mm;
+        }
+
+        .totais-gerais table {
+            width: 100%;
+            margin-left: auto;
+        }
+
+        .totais-gerais td {
+            border: none;
+            padding: 1mm;
+            font-weight: bold;
+        }
+
+        .totais-gerais .valor {
+            text-align: right;
+            border-bottom: 1px solid #000000;
+        }
+
+        /* Rodapé do sistema */
+        .sistema-rodape {
+            margin-top: 10mm;
+            padding: 2mm;
+            border-top: 1px dashed #999999;
+            font-family: 'Courier New', monospace;
+            font-size: 8pt;
+            color: #666666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Texto alinhado à direita */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        /* Espaçamentos */
+        .mb-1 { margin-bottom: 2mm; }
+        .mb-2 { margin-bottom: 4mm; }
+        .mt-1 { margin-top: 2mm; }
+        .mt-2 { margin-top: 4mm; }
+
+        /* Linha separadora */
+        .separator {
+            border-top: 1px dashed #999999;
+            margin: 3mm 0;
+        }
+
+        /* Informações complementares */
+        .info-adicional {
+            font-size: 8pt;
+            color: #333333;
+            margin: 2mm 0;
+        }
+
+        /* Badge de recibo */
+        .recibo-badge {
+            display: inline-block;
+            padding: 1mm 3mm;
+            background: #000000;
+            color: white;
+            font-weight: bold;
+            margin-right: 2mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="relatorio">
+        <!-- Cabeçalho estilo sistema Futura -->
+        <div class="sistema-header">
+            <span class="site">Rei das Madeiras</span>
+            <span class="data"><%= new Date().toLocaleDateString('pt-BR') %> <%= new Date().toLocaleTimeString('pt-BR') %></span>
+            <span class="pagina">Página 1 de 1</span>
+        </div>
+
+        <!-- Título do Relatório -->
+        <div class="titulo-relatorio">
+            <h1>COMISSÃO POR VENDEDOR/REPRESENTANTE</h1>
+            <div class="subtitulo">TODAS EMPRESAS - ANALÍTICO</div>
+        </div>
+
+        <!-- Informações do Documento -->
+        <div class="documento-info">
+            <span><strong>Recibo:</strong> <%= numeroRecibo %></span>
+            <span><strong>Data Pagamento:</strong> <%= new Date(dataPagamento).toLocaleDateString('pt-BR') %></span>
+            <span><strong>Período:</strong> <%= new Date(periodo.inicio).toLocaleDateString('pt-BR') %> a <%= new Date(periodo.fim).toLocaleDateString('pt-BR') %></span>
+        </div>
+
+        <!-- Dados do Vendedor (agora apenas um vendedor, como nos dados recebidos) -->
+        <div class="vendedor-header">
+            <span class="codigo">Vendedor:</span>
+            <span class="nome"><%= vendedor.nome %></span>
+        </div>
+
+        <!-- Tabela de Vendas -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>NF/Pedido</th>
+                    <th>Cliente</th>
+                    <th class="text-right">Base Cálculo</th>
+                    <th class="text-right">%</th>
+                    <th class="text-right">Comissão</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% comissoes.forEach(c => { %>
+                    <tr>
+                        <td><%= c.venda?.createdAt ? new Date(c.venda.createdAt).toLocaleDateString('pt-BR') : '' %></td>
+                        <td>VENDA</td>
+                        <td><%= c.venda?.numeroPedido || (c.vendaId ? c.vendaId.substring(0,4) : '----') %></td>
+                        <td><%= c.venda?.cliente?.nomeRazaoSocial?.substring(0,20) || 'CONSUMIDOR FINAL' %></td>
+                        <td class="text-right">R$ <%= c.baseCalculo.toFixed(2).replace('.', ',') %></td>
+                        <td class="text-right"><%= c.percentualAplicado %>%</td>
+                        <td class="text-right">R$ <%= c.valorComissao.toFixed(2).replace('.', ',') %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+
+        <!-- Total do Vendedor -->
+        <div class="comissao-info">
+            <strong>Comissão: <%= vendedor.comissaoPercentual %>%</strong>
+        </div>
+
+        <table class="vendedor-total">
+            <tr>
+                <td colspan="5" class="text-right label"><strong>Total do Vendedor:</strong></td>
+                <td class="valor"><strong>R$ <%= comissoes.reduce((sum, c) => sum + c.baseCalculo, 0).toFixed(2).replace('.', ',') %></strong></td>
+                <td class="valor"><strong>R$ <%= valorTotal.toFixed(2).replace('.', ',') %></strong></td>
+            </tr>
+        </table>
+
+        <!-- Totais Gerais -->
+        <div class="totais-gerais">
+            <table>
+                <tr>
+                    <td style="width: 70%;">Total Geral de Comissões:</td>
+                    <td class="valor" style="width: 30%;">R$ <%= valorTotal.toFixed(2).replace('.', ',') %></td>
+                </tr>
+                <tr>
+                    <td>Valor por extenso:</td>
+                    <td class="valor"><%= valorExtenso %></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Informações de Pagamento -->
+        <div class="sistema-rodape">
+            <span>Pagador: <%= pagador.nome %> (<%= pagador.cargo || 'Responsável' %>)</span>
+            <span>Data: <%= new Date().toLocaleDateString('pt-BR') %></span>
+        </div>
+
+        <!-- Observações -->
+        <% if (observacoes) { %>
+            <div class="info-adicional">
+                <strong>Obs:</strong> <%= observacoes %>
+            </div>
+        <% } %>
+
+        <!-- Assinaturas no estilo antigo -->
+        <table style="width: 100%; margin-top: 10mm; border: none;">
+            <tr>
+                <td style="border: none; width: 45%; text-align: center;">
+                    <div style="border-top: 1px solid #000000; width: 80%; margin: 0 auto; padding-top: 2mm; margin-bottom: 2mm;"></div>
+                    <div><strong><%= pagador.nome %></strong></div>
+                    <div style="font-size: 8pt;"><%= pagador.cargo || 'Responsável' %></div>
+                    <div style="font-size: 7pt;">(Pagador)</div>
+                </td>
+                <td style="border: none; width: 10%;"></td>
+                <td style="border: none; width: 45%; text-align: center;">
+                    <div style="border-top: 1px solid #000000; width: 80%; margin: 0 auto; padding-top: 2mm; margin-bottom: 2mm;"></div>
+                    <div><strong><%= vendedor.nome %></strong></div>
+                    <div style="font-size: 8pt;"><%= vendedor.cargo || 'Vendedor' %></div>
+                    <div style="font-size: 7pt;">(Recebedor)</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Rodapé do sistema -->
+        <div class="sistema-rodape">
+            <span>REI DAS MADEIRAS</span>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            padding: 10mm;
+            color: #333;
+            font-size: 11px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 5mm;
+            margin-bottom: 5mm;
+        }
+
+        .company-info h1 {
+            color: #1a365d;
+            font-size: 20px;
+            margin-bottom: 1mm;
+        }
+
+        .doc-info {
+            text-align: right;
+        }
+
+        .doc-number {
+            font-size: 16px;
+            font-weight: bold;
+            color: #c53030;
+        }
+
+        .section-title {
+            background: #edf2f7;
+            padding: 2mm;
+            font-weight: bold;
+            color: #2c5282;
+            margin-top: 5mm;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+            border-left: 4px solid #2c5282;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4mm;
+        }
+
+        .info-box p {
+            margin-bottom: 1mm;
+        }
+
+        .info-box strong {
+            color: #4a5568;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 3mm;
+            table-layout: fixed;
+        }
+
+        th {
+            background: #2c5282;
+            color: white;
+            padding: 2mm;
+            text-align: left;
+            font-size: 9px;
+        }
+
+        td {
+            padding: 2mm 1.5mm;
+            border-bottom: 1px solid #e2e8f0;
+            word-wrap: break-word;
+            font-size: 9px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .totals-container {
+            margin-top: 5mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .obs-box {
+            width: 60%;
+            font-size: 10px;
+            color: #4a5568;
+        }
+
+        .totals-table {
+            width: 280px;
+        }
+
+        .totals-table td {
+            border: none;
+            padding: 1mm 2mm;
+        }
+
+        .grand-total {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1a365d;
+            border-top: 1px solid #1a365d !important;
+        }
+
+        .footer {
+            margin-top: 10mm;
+            text-align: center;
+            color: #718096;
+            font-size: 9px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5mm;
+        }
+
+        .address-box {
+            background: #f7fafc;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 4mm;
+            margin-top: 3mm;
+        }
+
+        .address-type {
+            display: inline-block;
+            background: #2c5282;
+            color: white;
+            padding: 1mm 3mm;
+            border-radius: 12px;
+            font-size: 9px;
+            margin-bottom: 2mm;
+        }
+
+        .address-default {
+            background: #ecc94b;
+            color: #744210;
+        }
+
+        /* Larguras das colunas */
+        .col-descricao { width: 25%; }
+        .col-m3       { width: 6%; }
+        .col-peso     { width: 9%; }
+        .col-qtd      { width: 6%; }
+        .col-preco    { width: 10%; }
+        .col-desc-un  { width: 10%; }
+        .col-desc-tot { width: 10%; }
+        .col-total    { width: 11%; }
+
+        /* Badge de desconto */
+        .badge-desconto {
+            display: inline-block;
+            background: #fff5f5;
+            color: #c53030;
+            border: 1px solid #fed7d7;
+            border-radius: 3px;
+            padding: 0.5mm 2mm;
+            font-size: 8px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .sem-desconto {
+            color: #a0aec0;
+            font-size: 8px;
+        }
+
+        .produto-nome {
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 95%;
+        }
+
+        .produto-detalhes {
+            display: inline-block;
+            color: #718096;
+            font-size: 8px;
+            margin-left: 2px;
+        }
+
+        .compact-number {
+            white-space: nowrap;
+        }
+
+        /* ── Linha de totais: nunca se repete entre páginas ── */
+        .tr-totais {
+            background: #f7fafc;
+            font-weight: bold;
+            border-top: 2px solid #2c5282;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+    </style>
+</head>
+
+<body>
+<%
+    /* ─────────────────────────────────────────────────────────
+       Funções auxiliares de formatação (pt-BR)
+       ───────────────────────────────────────────────────────── */
+
+    /**
+     * Formata número com separadores de milhar e casas decimais.
+     * Ex.: fmtNum(21105, 2) → "21.105,00"
+     */
+    function fmtNum(value, decimals) {
+        return Number(value).toLocaleString('pt-BR', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+
+    /** Moeda: R$ 29.434,25 */
+    function fmtBRL(value) {
+        return 'R$ ' + fmtNum(value, 2);
+    }
+
+    /** M³ com 2 casas decimais: 21,47 */
+    function fmtM3(value) {
+        return fmtNum(value, 2);
+    }
+
+    /** Peso (kg) com separador de milhar: 21.105,00 */
+    function fmtKg(value) {
+        return fmtNum(value, 2);
+    }
+%>
+    <div class="header">
+        <div class="company-info">
+            <img src="<%= logoDataUri %>" style="height: 100px; margin-bottom: 2mm;">
+            <h1>REI DAS MADEIRAS</h1>
+            <p>CNPJ: 44.166.969/0001-02 | Tel: (38) 99188-2412</p>
+        </div>
+        <div class="doc-info">
+            <p class="doc-number">PEDIDO N° <%= venda.numeroPedido %></p>
+            <p>Data: <%= new Date(venda.createdAt).toLocaleDateString('pt-BR') %></p>
+            <p>Status: <strong><%= venda.statusVenda %></strong></p>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="info-box">
+            <div class="section-title">Dados do Cliente</div>
+            <p><strong>Nome:</strong> <%= venda.cliente?.nomeRazaoSocial || 'Consumidor Final' %></p>
+            <p><strong>CPF/CNPJ:</strong> <%= venda.cliente?.documento || '-' %></p>
+            <p><strong>Celular:</strong> <%= venda.cliente?.celular || 'Não informado' %></p>
+            <p><strong>E-mail:</strong> <%= venda.cliente?.email || 'Não informado' %></p>
+        </div>
+        <div class="info-box">
+            <div class="section-title">Informações do Pedido</div>
+            <p><strong>Vendedor:</strong> <%= venda.vendedor?.nome || 'Sistema' %></p>
+            <p><strong>Forma de Pagamento:</strong> <%= venda.formaPagamento?.nome || venda.status %></p>
+            <p><strong>N° NF-e:</strong> <%= venda.statusSefaz || 'Não gerada' %></p>
+            <p><strong>Tipo de Pedido:</strong> <%= venda.tipoPedido || 'Venda' %></p>
+        </div>
+    </div>
+
+    <% if (venda.enderecoEntrega) { %>
+        <div class="section-title">Endereço de Entrega</div>
+        <div class="address-box">
+            <span class="address-type <%= venda.enderecoEntrega.padrao ? 'address-default' : '' %>">
+                <%= venda.enderecoEntrega.tipoEndereco %>
+                <% if (venda.enderecoEntrega.padrao) { %> (PADRÃO) <% } %>
+            </span>
+            <p><strong>Endereço:</strong> <%= venda.enderecoEntrega.logradouro %>, <%= venda.enderecoEntrega.numero %></p>
+            <% if (venda.enderecoEntrega.complemento) { %>
+                <p><strong>Complemento:</strong> <%= venda.enderecoEntrega.complemento %></p>
+            <% } %>
+            <p><strong>Bairro:</strong> <%= venda.enderecoEntrega.bairro %></p>
+            <p><strong>Cidade:</strong> <%= venda.enderecoEntrega.cidade %> - <%= venda.enderecoEntrega.estado %></p>
+            <p><strong>CEP:</strong> <%= venda.enderecoEntrega.cep %></p>
+            <% if (venda.enderecoEntrega.pais !== 'Brasil') { %>
+                <p><strong>País:</strong> <%= venda.enderecoEntrega.pais %></p>
+            <% } %>
+            <% if (venda.enderecoEntrega.observacoes) { %>
+                <p><strong>Observações do endereço:</strong> <%= venda.enderecoEntrega.observacoes %></p>
+            <% } %>
+        </div>
+    <% } else if (venda.cliente) { %>
+        <div class="section-title">Endereço de Entrega</div>
+        <div style="background: #fff5f5; border: 1px solid #fed7d7; padding: 4mm; border-radius: 4px;">
+            <p style="color: #c53030; margin: 0;">
+                <strong>⚠ ATENÇÃO:</strong> Cliente não possui endereço cadastrado para entrega.
+            </p>
+        </div>
+    <% } %>
+
+    <div class="section-title">ITENS DO PEDIDO</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-descricao">DESCRIÇÃO</th>
+                <th class="col-m3 text-center">M³</th>
+                <th class="col-peso text-right">PESO (kg)</th>
+                <th class="col-qtd text-center">QTD</th>
+                <th class="col-preco text-right">PREÇO UN</th>
+                <th class="col-desc-un text-right">DESC. UN</th>
+                <th class="col-desc-tot text-right">DESC. TOTAL</th>
+                <th class="col-total text-right">TOTAL LÍQ.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%
+                let totalM3        = 0;
+                let totalPeso      = 0;
+                let totalQtd       = 0;
+                let totalDescontos = 0;
+
+                venda.itens.forEach(item => {
+                    const produto = item.produto;
+
+                    // ── Cálculo de M³ ──────────────────────────────────────
+                    let m3Calculado = 0;
+
+                    if (produto?.dimensao_ripa && produto?.comprimento_mt) {
+                        const partes = produto.dimensao_ripa.split('x');
+                        if (partes.length === 2) {
+                            const medidas = partes.map(n => parseFloat(n.trim().replace(',', '.')));
+                            const comprimento = parseFloat(String(produto.comprimento_mt).replace(',', '.'));
+                            m3Calculado = ((medidas[0]/100) * (medidas[1]/100) * comprimento) * item.quantidade;
+                        }
+                    } else if (produto?.diametro_min && produto?.diametro_max && produto?.comprimento_mt) {
+                        const dMin = parseFloat(String(produto.diametro_min).replace(',', '.'));
+                        const dMax = parseFloat(String(produto.diametro_max).replace(',', '.'));
+                        const comprimento = parseFloat(String(produto.comprimento_mt).replace(',', '.'));
+                        const raioMedio = ((dMin + dMax) / 2) / 200;
+                        m3Calculado = (Math.PI * Math.pow(raioMedio, 2) * comprimento) * item.quantidade;
+                    }
+
+                    if (!m3Calculado || m3Calculado === 0) {
+                        m3Calculado = (parseFloat(produto?.m3_unitario) || 0) * item.quantidade;
+                    }
+
+                    // ── Peso ───────────────────────────────────────────────
+                    const pesoTotal = (parseFloat(produto?.peso_unitario_kg) || 0) * item.quantidade;
+
+                    // ── Desconto ───────────────────────────────────────────
+                    const descontoTotal    = parseFloat(item.valorDesconto) || 0;
+                    const descontoUnitario = item.quantidade > 0
+                        ? descontoTotal / item.quantidade
+                        : 0;
+
+                    totalM3          += m3Calculado;
+                    totalPeso        += pesoTotal;
+                    totalQtd         += item.quantidade;
+                    totalDescontos   += descontoTotal;
+            %>
+            <tr>
+                <td class="col-descricao">
+                    <span class="produto-nome">
+                        <strong><%= produto?.nome || 'Produto' %></strong>
+                    </span>
+                    <% if (produto?.dimensao_ripa) { %>
+                        <span class="produto-detalhes"><%= produto.dimensao_ripa %></span>
+                    <% } %>
+                    <% if (produto?.comprimento_mt) { %>
+                        <span class="produto-detalhes"><%= produto.comprimento_mt %>m</span>
+                    <% } %>
+                </td>
+                <td class="col-m3 text-center">
+                    <%= fmtM3(m3Calculado) %>
+                </td>
+                <td class="col-peso text-right">
+                    <%= fmtKg(pesoTotal) %>
+                </td>
+                <td class="col-qtd text-center">
+                    <%= item.quantidade.toFixed(1).replace('.', ',') %>
+                </td>
+                <td class="col-preco text-right">
+                    <%= fmtBRL(item.valorUnitario) %>
+                </td>
+
+                <!-- DESCONTO UNITÁRIO -->
+                <td class="col-desc-un text-right">
+                    <% if (descontoUnitario > 0) { %>
+                        <span class="badge-desconto">
+                            - <%= fmtBRL(descontoUnitario) %>
+                        </span>
+                    <% } else { %>
+                        <span class="sem-desconto">—</span>
+                    <% } %>
+                </td>
+
+                <!-- DESCONTO TOTAL DO ITEM -->
+                <td class="col-desc-tot text-right">
+                    <% if (descontoTotal > 0) { %>
+                        <span class="badge-desconto">
+                            - <%= fmtBRL(descontoTotal) %>
+                        </span>
+                    <% } else { %>
+                        <span class="sem-desconto">—</span>
+                    <% } %>
+                </td>
+
+                <td class="col-total text-right">
+                    <%= fmtBRL(item.valorSubtotal) %>
+                </td>
+            </tr>
+            <% }); %>
+
+            <%
+            /*
+             * ── LINHA DE TOTAIS ────────────────────────────────────────────
+             * Colocada dentro do <tbody> (e NÃO em <tfoot>) para evitar que
+             * o navegador/Puppeteer a repita no rodapé de cada página quando
+             * a tabela se expande por múltiplas páginas.
+             * A classe .tr-totais + page-break-inside:avoid garante que a
+             * linha nunca seja cortada entre páginas.
+             */
+            %>
+            <tr class="tr-totais">
+                <td class="col-descricao text-right"><strong>TOTAL</strong></td>
+                <td class="col-m3 text-center"><strong><%= fmtM3(totalM3) %></strong></td>
+                <td class="col-peso text-right"><strong><%= fmtKg(totalPeso) %></strong></td>
+                <td class="col-qtd text-center"><strong><%= totalQtd.toFixed(1).replace('.', ',') %></strong></td>
+                <td class="col-preco text-center"></td>
+                <!-- Coluna desc. unit. do rodapé — apenas traço -->
+                <td class="col-desc-un text-right" style="color: #c53030;">-</td>
+                <!-- Total de descontos -->
+                <td class="col-desc-tot text-right" style="color: #c53030;">
+                    <% if (totalDescontos > 0) { %>
+                        <strong>- <%= fmtBRL(totalDescontos) %></strong>
+                    <% } %>
+                </td>
+                <td class="col-total text-right">
+                    <strong><%= fmtBRL(venda.valorProdutos) %></strong>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals-container">
+        <div class="obs-box">
+            <div style="font-weight: bold; margin-bottom: 1mm; color: #2c5282;">OBSERVAÇÕES DO CLIENTE:</div>
+            <p><%= venda.observacoesCliente || 'Nenhuma observação informada.' %></p>
+
+            <% if (venda.observacoesInternas) { %>
+                <div style="margin-top: 3mm; padding-top: 3mm; border-top: 1px dashed #e2e8f0;">
+                    <div style="font-weight: bold; margin-bottom: 1mm; color: #c53030;">OBSERVAÇÕES INTERNAS:</div>
+                    <p><%= venda.observacoesInternas %></p>
+                </div>
+            <% } %>
+        </div>
+
+        <table class="totals-table">
+            <tr>
+                <td>Subtotal Produtos:</td>
+                <td class="text-right"><%= fmtBRL(venda.valorProdutos) %></td>
+            </tr>
+            <% if (venda.valorFrete > 0) { %>
+                <tr>
+                    <td>Frete (+):</td>
+                    <td class="text-right"><%= fmtBRL(venda.valorFrete) %></td>
+                </tr>
+            <% } %>
+            <% if (venda.valorDesconto > 0) { %>
+                <tr>
+                    <td>Desconto Geral (-):</td>
+                    <td class="text-right" style="color: #c53030;">
+                        <%= fmtBRL(venda.valorDesconto) %>
+                    </td>
+                </tr>
+            <% } %>
+            <tr class="grand-total">
+                <td>TOTAL GERAL:</td>
+                <td class="text-right"><%= fmtBRL(venda.valorTotal) %></td>
+            </tr>
+        </table>
+    </div>
+
+    <% if (venda.enderecoEntrega && venda.valorFrete > 0) { %>
+        <div style="margin-top: 5mm; padding: 3mm; background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 4px;">
+            <div style="font-weight: bold; color: #276749;">INFORMAÇÕES DE FRETE</div>
+            <p style="margin: 1mm 0; font-size: 10px;">
+                <strong>Valor do frete:</strong> <%= fmtBRL(venda.valorFrete) %>
+                <% if (venda.prazoEntrega) { %>
+                    | <strong>Prazo estimado:</strong> <%= venda.prazoEntrega %> dias úteis
+                <% } %>
+                <% if (venda.transportadora) { %>
+                    | <strong>Transportadora:</strong> <%= venda.transportadora %>
+                <% } %>
+            </p>
+        </div>
+    <% } %>
+
+    <div class="footer">
+        <p>Este documento não é uma nota fiscal eletrônica. É apenas um comprovante de conferência de pedido.</p>
+    </div>
+</body>
+
+</html>

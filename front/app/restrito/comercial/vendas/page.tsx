@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { v4 as uuidv4 } from 'uuid';
 import { API_URL } from "@/lib/api";
 import {
   ShoppingCart, Search, Truck, Plus, Send, Trash2, Package,
@@ -170,7 +171,7 @@ function MobileVendas({
       ));
     } else {
       setItensVenda([...itensVenda, {
-        tempId: crypto.randomUUID(), produtoId: produto.id,
+        tempId: uuidv4(), produtoId: produto.id,
         sku: produto.codigo_sku || "N/D", nome: produto.nome,
         unidade: produto.unidade_comercial, precoTabela: precoBase,
         quantidade: 1, descontoReais: 0, totalLiquido: precoBase
@@ -724,7 +725,7 @@ function DesktopVendas({
   const handleAddItem = (produto: Produto) => {
     const precoBase = parseFloat(produto.preco_venda_base);
     setItensVenda([...itensVenda, {
-      tempId: crypto.randomUUID(), produtoId: produto.id,
+      tempId: uuidv4(), produtoId: produto.id,
       sku: produto.codigo_sku || "N/D", nome: produto.nome,
       unidade: produto.unidade_comercial, precoTabela: precoBase,
       quantidade: 1, descontoReais: 0, totalLiquido: precoBase

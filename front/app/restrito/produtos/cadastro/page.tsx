@@ -20,7 +20,9 @@ import {
   Loader2,
   AlertCircle,
   XCircle,
-  CheckCircle
+  CheckCircle,
+  Layers,
+  Tag
 } from "lucide-react";
 import HeaderEnterprise from '@/components/header';
 import { getToken } from '@/lib/auth';
@@ -45,6 +47,14 @@ interface FormData {
 interface Categoria {
   id: number;
   nome: string;
+}
+
+interface TabelaPreco {
+  id: string;
+  nome: string;
+  tipo: string | null;
+  ativo: boolean;
+  padrao: boolean;
 }
 
 // Valores iniciais
@@ -141,6 +151,12 @@ export default function CadastroProduto() {
     { id: 6, nome: 'Régua' },
   ]);
 
+  // Tabelas de preço disponíveis e seleção do usuário
+  const [tabelasPreco, setTabelasPreco] = useState<TabelaPreco[]>([]);
+  const [loadingTabelas, setLoadingTabelas] = useState(true);
+  // tabelaId -> { selecionada, preco }
+  const [precosPorTabela, setPrecosPorTabela] = useState<Record<string, { selecionada: boolean; preco: string }>>({});
+
   // Estados para notificações e feedback
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
@@ -173,6 +189,29 @@ export default function CadastroProduto() {
     }
   };
 
+  // Buscar tabelas de preço cadastradas
+  const fetchTabelasPreco = async () => {
+    try {
+      setLoadingTabelas(true);
+      const response = await fetch(`${API_URL}/tabelas-preco`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
+      if (response.ok) {
+        const data: TabelaPreco[] = await response.json();
+        setTabelasPreco(data.filter((t) => t.ativo));
+      }
+    } catch (error) {
+      console.error('Erro ao buscar tabelas de preço:', error);
+    } finally {
+      setLoadingTabelas(false);
+    }
+  };
+
   const createProduto = async (data: any) => {
     try {
       const response = await fetch(`${API_URL}/produtos`, {
@@ -201,6 +240,29 @@ export default function CadastroProduto() {
       return await response.json();
     } catch (error) {
       throw error;
+    }
+  };
+
+  // Vincula o produto recém-criado às tabelas de preço selecionadas
+  const vincularTabelasPreco = async (produtoId: string) => {
+    const selecionadas = Object.entries(precosPorTabela).filter(([, v]) => v.selecionada);
+
+    for (const [tabelaId, val] of selecionadas) {
+      const preco = Number(String(val.preco).replace(',', '.'));
+      const precoFinal = isNaN(preco) || preco <= 0 ? Number(formData.preco_venda_base) : preco;
+
+      try {
+        await fetch(`${API_URL}/tabelas-preco/${tabelaId}/itens/${produtoId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ preco: precoFinal, ativo: true }),
+        });
+      } catch (error) {
+        console.error(`Erro ao vincular produto à tabela ${tabelaId}:`, error);
+      }
     }
   };
 
@@ -245,6 +307,31 @@ export default function CadastroProduto() {
         [field]: numericValue
       }));
     }
+  };
+
+  // Alterna a seleção de uma tabela de preço para o produto
+  const handleToggleTabelaPreco = (tabelaId: string) => {
+    setPrecosPorTabela(prev => {
+      const atual = prev[tabelaId];
+      return {
+        ...prev,
+        [tabelaId]: {
+          selecionada: !(atual?.selecionada),
+          preco: atual?.preco ?? '',
+        }
+      };
+    });
+  };
+
+  // Atualiza o preço específico do produto em uma tabela
+  const handlePrecoTabelaChange = (tabelaId: string, value: string) => {
+    setPrecosPorTabela(prev => ({
+      ...prev,
+      [tabelaId]: {
+        selecionada: prev[tabelaId]?.selecionada ?? true,
+        preco: value,
+      }
+    }));
   };
 
   const handleSave = async () => {
@@ -299,6 +386,12 @@ export default function CadastroProduto() {
       }
 
       const result = await createProduto(dataToSend);
+
+      // Vincula às tabelas de preço selecionadas (se houver)
+      if (result?.id) {
+        await vincularTabelasPreco(result.id);
+      }
+
       showNotification('success', 'Produto cadastrado com sucesso!');
 
       // Limpar formulário após sucesso
@@ -314,11 +407,13 @@ export default function CadastroProduto() {
 
   const handleReset = () => {
     setFormData(initialFormData);
+    setPrecosPorTabela({});
   };
 
-  // Carregar categorias ao iniciar
+  // Carregar categorias e tabelas de preço ao iniciar
   useEffect(() => {
     fetchCategorias();
+    fetchTabelasPreco();
   }, []);
 
   // Função para calcular preço sugerido
@@ -508,6 +603,7 @@ export default function CadastroProduto() {
                   onChange={(e) => handleNumberInputChange('preco_venda_base', e.target.value)}
                 />
               </div>
+              <p className="text-[9px] text-slate-400 mt-1">Preço de referência. As Tabelas de Preço abaixo podem sobrescrevê-lo por tabela.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase font-black text-slate-400">Unidade Comercial</Label>
@@ -545,11 +641,72 @@ export default function CadastroProduto() {
           </CardContent>
         </Card>
 
-        {/* SEÇÃO 4: DADOS FISCAIS */}
+        {/* SEÇÃO 4: TABELAS DE PREÇO */}
         <Card className="border-none shadow-sm ring-1 ring-slate-200">
           <CardHeader className="bg-slate-50 border-b py-3">
             <CardTitle className="text-xs font-black text-slate-600 uppercase flex items-center gap-2">
-              <FileText className="h-4 w-4" /> 4. Dados Fiscais
+              <Layers className="h-4 w-4 text-violet-600" /> 4. Tabelas de Preço
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <p className="text-[11px] text-slate-500 mb-4">
+              Selecione em quais tabelas de preço este produto deve aparecer e, opcionalmente, defina um preço
+              específico para cada tabela. Se nenhum preço for informado, será usado o <span className="font-bold">Preço de Venda Base</span>.
+            </p>
+
+            {loadingTabelas ? (
+              <div className="text-center py-6 text-xs text-slate-400 uppercase">Carregando tabelas de preço...</div>
+            ) : tabelasPreco.length === 0 ? (
+              <div className="text-center py-6 text-xs text-slate-400 uppercase flex flex-col items-center gap-2">
+                <Tag className="h-6 w-6 opacity-40" />
+                Nenhuma tabela de preço cadastrada ainda.
+                <span className="text-[10px]">Cadastre tabelas em "Tabelas de Preço" no menu.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tabelasPreco.map((tabela) => {
+                  const sel = precosPorTabela[tabela.id];
+                  return (
+                    <div
+                      key={tabela.id}
+                      className={`p-3 rounded-lg border transition-all ${sel?.selecionada ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'}`}
+                    >
+                      <label className="flex items-center gap-2 cursor-pointer mb-2">
+                        <input
+                          type="checkbox"
+                          className="text-violet-600 rounded h-4 w-4"
+                          checked={!!sel?.selecionada}
+                          onChange={() => handleToggleTabelaPreco(tabela.id)}
+                        />
+                        <span className="text-xs font-bold text-slate-700">{tabela.nome}</span>
+                        {tabela.padrao && (
+                          <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200">Padrão</Badge>
+                        )}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">R$</span>
+                        <Input
+                          type="text"
+                          disabled={!sel?.selecionada}
+                          placeholder={formData.preco_venda_base ? formatNumber(formData.preco_venda_base) : '0,00'}
+                          className="h-9 text-sm font-bold pl-8 disabled:bg-slate-50"
+                          value={sel?.preco ?? ''}
+                          onChange={(e) => handlePrecoTabelaChange(tabela.id, e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* SEÇÃO 5: DADOS FISCAIS */}
+        <Card className="border-none shadow-sm ring-1 ring-slate-200">
+          <CardHeader className="bg-slate-50 border-b py-3">
+            <CardTitle className="text-xs font-black text-slate-600 uppercase flex items-center gap-2">
+              <FileText className="h-4 w-4" /> 5. Dados Fiscais
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">

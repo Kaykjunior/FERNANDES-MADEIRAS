@@ -23,7 +23,7 @@ import { ContasPagarModule } from './contas_pagar/contas_pagar.module';
 import { ContasReceberModule } from './contas_receber/contas_receber.module';
 import { ComissoesModule } from './comissoes/comissoes.module';
 import { EstoqueModule } from './estoque/estoque.module';
-import { LicitacoesModule } from './licitacao/Licitacoes.module';
+import { TabelasPrecoModule } from './tabelas-preco/tabelas-preco.module';
 
 @Module({
   imports: [
@@ -43,7 +43,7 @@ import { LicitacoesModule } from './licitacao/Licitacoes.module';
       database: process.env.DB_DATABASE,
       autoLoadEntities: true, // Carrega entidades automaticamente
       synchronize: true,      // CUIDADO: Em produção use false e utilize migrations
-      logging: false,          
+      logging: false,
       extra: {
         timezone: 'America/Sao_Paulo',
       }
@@ -68,7 +68,7 @@ import { LicitacoesModule } from './licitacao/Licitacoes.module';
     ContasReceberModule,
     ComissoesModule,
     EstoqueModule,
-    LicitacoesModule  ],
+    TabelasPrecoModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -16,17 +16,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Rei das Madeiras",
-  description: "Qualidade em cada peça - Itamarandiba / MG",
+  title: "Fernandes Madeira",
+  description: "PRODUZINDO QUALIDADE",
   openGraph: {
-    title: "Rei das Madeiras",
+    title: "Fernandes Madeira",
     description: "Eucalipto Tratado e In Natura",
     images: [
       {
-        url: "/logo2.png", // Caminho da imagem que está na pasta public
+        url: "/logo3.png", // Caminho da imagem que está na pasta public
         width: 800,
         height: 600,
-        alt: "Rei das Madeiras Logo",
+        alt: "Fernandes Madeira Logo",
       },
     ],
   },

@@ -8,7 +8,7 @@ import { generatePdf } from 'html-pdf-node';
 export class PdfService {
     async gerarTabelaCompletaPdf(dadosParaTemplate: any): Promise<Buffer> {
         // Caminho da logo
-        const logoPath = path.join(process.cwd(), 'src', 'assests', 'logo-madeira.jpeg');
+        const logoPath = path.join(process.cwd(), 'src', 'assests', 'logoFM.png');
         let logoDataUri = '';
 
         try {
@@ -51,7 +51,7 @@ export class PdfService {
 
     async gerarTabelaEspecialPdf(dadosParaTemplate: any): Promise<Buffer> {
         // Caminho da logo
-        const logoPath = path.join(process.cwd(), 'src', 'assests', 'logo-madeira.jpeg');
+        const logoPath = path.join(process.cwd(), 'src', 'assests', 'logoFM.png');
         let logoDataUri = '';
 
         try {

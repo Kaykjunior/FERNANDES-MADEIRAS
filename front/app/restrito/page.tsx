@@ -65,8 +65,8 @@ export default function LoginPage() {
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="relative w-16 h-16">
               <Image
-                src="/logo2.png"
-                alt="Rei das Madeiras"
+                src="/logo3.png"
+                alt="Fernandes Madeira"
                 fill
                 className="object-contain"
                 priority
@@ -75,7 +75,7 @@ export default function LoginPage() {
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <h1 className="font-bold text-3xl tracking-tight text-white">
-                  REI DAS MADEIRAS
+                  Fernandes Madeira
                 </h1>
                 <Crown className="w-5 h-5 text-amber-500" />
               </div>
@@ -212,7 +212,7 @@ export default function LoginPage() {
 
           <div className="text-center">
             <p className="uppercase tracking-wider">
-              © 2026 REI DAS MADEIRAS LTDA
+              © 2026 Fernandes Madeira LTDA
             </p>
             <p className="text-[11px] text-gray-700">
               Todos os direitos reservados

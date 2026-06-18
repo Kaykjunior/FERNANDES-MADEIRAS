@@ -3,14 +3,14 @@ version: '3.8'
 services:
   db:
     image: postgres:15
-    container_name: madeireira_db
+    container_name: fernandes_madeiras
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: '@K1a2y3k4'
-      POSTGRES_DB: madeireira_erp
+      POSTGRES_DB: fernandes_madeiras
     ports:
-      - "5432:5432"
+      - "5438:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 

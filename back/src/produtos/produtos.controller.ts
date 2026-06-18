@@ -21,10 +21,12 @@ export class ProdutosController {
     return this.produtosService.findAll();
   }
 
-  @Get(':id')
+  // Lista produtos com as tabelas de preços (e respectivos preços) associadas.
+  // Rota específica antes de ':id' para não conflitar.
+  @Get('com-tabelas-preco')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string) {
-    return this.produtosService.findOne(id);
+  findAllComTabelasPreco() {
+    return this.produtosService.findAllComTabelasPreco();
   }
 
   @Get('medidas/lista') // <-- rota específica antes do :id
@@ -36,6 +38,19 @@ export class ProdutosController {
   @UseGuards(JwtAuthGuard)
   gerarTabela(@Param('categoriaId', ParseIntPipe) categoriaId: number) {
     return this.produtosService.getTabelaPrecos(categoriaId);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string) {
+    return this.produtosService.findOne(id);
+  }
+
+  // Detalhe do produto incluindo as tabelas de preços às quais pertence
+  @Get(':id/tabelas-preco')
+  @UseGuards(JwtAuthGuard)
+  findOneComTabelasPreco(@Param('id', ParseUUIDPipe) id: string) {
+    return this.produtosService.findOneComTabelasPreco(id);
   }
 
   @Patch(':id')

@@ -24,8 +24,26 @@ export class ProdutosService {
     });
   }
 
+  // Lista produtos junto com as tabelas de preços às quais pertencem
+  // e o preço definido em cada uma. Útil para a tela de cadastro de produto.
+  async findAllComTabelasPreco() {
+    return await this.repo.find({
+      relations: ['categoria', 'estoque', 'tabelaPrecoItens', 'tabelaPrecoItens.tabelaPreco'],
+      order: { nome: 'ASC' },
+    });
+  }
+
   async findOne(id: string) {
     const produto = await this.repo.findOne({ where: { id }, relations: ['categoria', 'estoque'], });
+    if (!produto) throw new NotFoundException('Produto não encontrado');
+    return produto;
+  }
+
+  async findOneComTabelasPreco(id: string) {
+    const produto = await this.repo.findOne({
+      where: { id },
+      relations: ['categoria', 'estoque', 'tabelaPrecoItens', 'tabelaPrecoItens.tabelaPreco'],
+    });
     if (!produto) throw new NotFoundException('Produto não encontrado');
     return produto;
   }

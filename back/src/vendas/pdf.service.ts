@@ -17,7 +17,7 @@ export class PdfService {
     const enderecoEntrega = vendaComEndereco.enderecoEntrega;
 
     // Caminho da logo - igual ao que funcionava antes
-    const logoPath = path.join(process.cwd(), 'src', 'assests', 'logo-madeira.jpeg'); // Note: 'assests' com dois 's'
+    const logoPath = path.join(process.cwd(), 'src', 'assests', 'logoFM.png'); // Note: 'assests' com dois 's'
     let logoDataUri = 'data:image/svg+xml;base64,...';
 
     if (fs.existsSync(logoPath)) {
@@ -30,10 +30,10 @@ export class PdfService {
 
       // Tenta caminhos alternativos
       const pathsToTry = [
-        path.join(process.cwd(), 'src', 'assests', 'logo-madeira.jpeg'),
-        path.join(process.cwd(), 'src', 'assets', 'logo-madeira.jpeg'),
-        path.join(process.cwd(), 'public', 'logo-madeira.jpeg'),
-        path.join(process.cwd(), 'logo-madeira.jpeg')
+        path.join(process.cwd(), 'src', 'assests', 'logoFM.png'),
+        path.join(process.cwd(), 'src', 'assets', 'logoFM.png'),
+        path.join(process.cwd(), 'public', 'logoFM.png'),
+        path.join(process.cwd(), 'logoFM.png')
       ];
 
       let found = false;

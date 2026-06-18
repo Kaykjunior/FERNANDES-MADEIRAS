@@ -439,7 +439,7 @@ function DashboardHeader({ greeting, currentTime, lastUpdate, vencidosCount, onR
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">
-          {greeting}, <span className="text-green-600">Rei Das Madeiras! 👋</span>
+          {greeting}, <span className="text-green-600">Fernandes Madeira! 👋</span>
         </h1>
         <p className="text-slate-500 mt-1 flex items-center gap-2 text-sm">
           <Clock className="h-3.5 w-3.5" /> {currentTime}
@@ -1392,7 +1392,7 @@ export default function DashboardBI() {
         <div className="container mx-auto px-4 py-4 max-w-7xl flex flex-col md:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-2">
             <Home className="h-4 w-4 text-blue-600" />
-            <span className="font-bold text-slate-900 text-sm">Rei Madeiras</span>
+            <span className="font-bold text-slate-900 text-sm">Fernandes Madeiras</span>
             <span className="text-xs text-slate-500">• Painel de Gestão</span>
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500">

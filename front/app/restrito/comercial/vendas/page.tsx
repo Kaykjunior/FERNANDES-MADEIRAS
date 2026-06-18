@@ -13,7 +13,7 @@ import { API_URL } from "@/lib/api";
 import {
   ShoppingCart, Search, Truck, Plus, Send, Trash2, Package,
   Save, CreditCard, User, CheckCircle, AlertCircle, ChevronRight,
-  ChevronLeft, X, Minus, ArrowRight
+  ChevronLeft, X, Minus, ArrowRight, Layers, Tag
 } from "lucide-react";
 import HeaderEnterprise from "@/components/header";
 import { Entidade } from "@/app/types/entidades.types";
@@ -25,6 +25,14 @@ interface Categoria { id: number; nome: string; }
 interface FormaPagamento {
   id: number; nome: string; codigoSefaz: string | null;
   taxaAdm: number; diasRecebimento: number; ativo: boolean;
+}
+interface TabelaPreco {
+  id: string;
+  nome: string;
+  tipo: string | null;
+  descricao: string | null;
+  ativo: boolean;
+  padrao: boolean;
 }
 interface Produto {
   id: string; nome: string; codigo_sku: string | null;
@@ -52,21 +60,85 @@ function useIsMobile() {
   return isMobile;
 }
 
+// --- COMPONENTE: SELEÇÃO DE TABELA DE PREÇOS (compartilhado mobile/desktop) ---
+function SelecaoTabelaPreco({
+  tabelasPreco, loadingTabelas, tabelaPrecoSelecionada, onSelecionar, isMobile
+}: {
+  tabelasPreco: TabelaPreco[];
+  loadingTabelas: boolean;
+  tabelaPrecoSelecionada: TabelaPreco | null;
+  onSelecionar: (tabela: TabelaPreco) => void;
+  isMobile?: boolean;
+}) {
+  return (
+    <div className={isMobile ? "p-4 space-y-4" : "max-w-3xl mx-auto py-10 px-4 space-y-6"}>
+      <div className="text-center py-2">
+        <Layers className={isMobile ? "h-8 w-8 text-blue-500 mx-auto mb-1" : "h-10 w-10 text-blue-500 mx-auto mb-2"} />
+        <h2 className={isMobile ? "text-sm font-black text-slate-700 uppercase" : "text-lg font-black text-slate-700 uppercase"}>
+          Selecione a Tabela de Preços
+        </h2>
+        <p className="text-xs text-slate-400 mt-1">
+          Todos os produtos deste pedido pertencerão à tabela escolhida
+        </p>
+      </div>
+
+      {loadingTabelas ? (
+        <div className="text-center py-8 text-xs text-slate-400 uppercase">Carregando tabelas...</div>
+      ) : tabelasPreco.length === 0 ? (
+        <div className="text-center py-8 text-xs text-slate-400 uppercase flex flex-col items-center gap-2">
+          <Tag className="h-8 w-8 opacity-40" />
+          Nenhuma tabela de preços disponível.
+          <span className="text-[10px]">Cadastre uma tabela de preços antes de iniciar um pedido.</span>
+        </div>
+      ) : (
+        <div className={isMobile ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 gap-3"}>
+          {tabelasPreco.map((tabela) => (
+            <button
+              key={tabela.id}
+              onClick={() => onSelecionar(tabela)}
+              className={`w-full p-4 rounded-xl border-2 text-left transition-all ${tabelaPrecoSelecionada?.id === tabela.id
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'
+                }`}
+            >
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-slate-800">{tabela.nome}</p>
+                    {tabela.padrao && (
+                      <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200">Padrão</Badge>
+                    )}
+                  </div>
+                  {tabela.tipo && <p className="text-[11px] font-mono text-slate-400 mt-0.5">{tabela.tipo}</p>}
+                  {tabela.descricao && <p className="text-[11px] text-slate-500 mt-1">{tabela.descricao}</p>}
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${tabelaPrecoSelecionada?.id === tabela.id ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
+                  {tabelaPrecoSelecionada?.id === tabela.id && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- COMPONENTE MOBILE: STEPPER ---
 function MobileVendas({
   products, entidades, formasPagamento, loadingFormas, loading,
   itensVenda, setItensVenda, clienteSelecionado, setClienteSelecionado,
   formaPagamentoSelecionada, setFormaPagamentoSelecionada,
   frete, setFrete, isSubmitting, handleFinalizarVenda, BRL,
-  getEstoqueProduto
+  getEstoqueProduto, tabelasPreco, loadingTabelas,
+  tabelaPrecoSelecionada, onSelecionarTabelaPreco, onTrocarTabelaPreco
 }: any) {
-  const [step, setStep] = useState(0); // 0: cliente, 1: produtos, 2: pagamento, 3: resumo
+  const [step, setStep] = useState(0); // 0: tabela, 1: cliente, 2: produtos, 3: pagamento, 4: resumo
   const [buscaCliente, setBuscaCliente] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<string | null>(null);
 
-  const steps = ["Cliente", "Produtos", "Pagamento", "Resumo"];
+  const steps = ["Tabela", "Cliente", "Produtos", "Pagamento", "Resumo"];
 
   const clientesFiltrados = useMemo(() => {
     if (buscaCliente.length < 2) return [];
@@ -108,26 +180,6 @@ function MobileVendas({
     setIsProductModalOpen(false);
   };
 
-  const handleQtdChange = (id: string, delta: number) => {
-    setItensVenda((prev: ItemVenda[]) =>
-      prev
-        .map(item => {
-          if (item.tempId !== id) return item;
-
-          const novaQtd = Math.max(0, item.quantidade + delta);
-
-          return {
-            ...item,
-            quantidade: novaQtd,
-            totalLiquido: Math.max(
-              0,
-              item.precoTabela * novaQtd - item.descontoReais
-            )
-          };
-        })
-    );
-  };
-
   const handleQtdSet = (id: string, value: string | number) => {
     // Se o input for limpo (string vazia), a quantidade vira 0 no estado
     const qtd = value === "" ? 0 : Math.max(0, Number(value));
@@ -145,7 +197,6 @@ function MobileVendas({
           )
         };
       })
-      // O .filter() que removia o item foi deletado daqui!
     );
   };
 
@@ -154,6 +205,7 @@ function MobileVendas({
   };
 
   const canProceed = [
+    !!tabelaPrecoSelecionada,
     !!clienteSelecionado,
     itensVenda.length > 0,
     !!formaPagamentoSelecionada,
@@ -167,6 +219,11 @@ function MobileVendas({
         <div className="flex items-center justify-between px-4 py-3">
           <div>
             <h1 className="text-sm font-black text-slate-800 uppercase tracking-tight">Novo Pedido</h1>
+            {tabelaPrecoSelecionada && (
+              <p className="text-[10px] text-violet-600 font-bold truncate max-w-[180px] flex items-center gap-1">
+                <Layers className="h-2.5 w-2.5" /> {tabelaPrecoSelecionada.nome}
+              </p>
+            )}
             {clienteSelecionado && (
               <p className="text-[10px] text-blue-600 font-medium truncate max-w-[180px]">
                 {clienteSelecionado.nomeRazaoSocial}
@@ -186,7 +243,7 @@ function MobileVendas({
           {steps.map((s, i) => (
             <button
               key={i}
-              onClick={() => i < step || canProceed[i - 1] ? setStep(i) : null}
+              onClick={() => i < step || canProceed.slice(0, i).every(Boolean) ? setStep(i) : null}
               className={`flex-1 py-2 text-[10px] font-bold uppercase transition-all relative ${step === i
                 ? 'text-blue-700 bg-white border-b-2 border-blue-600'
                 : i < step ? 'text-emerald-600' : 'text-slate-400'
@@ -206,8 +263,19 @@ function MobileVendas({
       {/* CONTEÚDO POR STEP */}
       <div className="flex-1 overflow-auto pb-24">
 
-        {/* STEP 0: CLIENTE */}
+        {/* STEP 0: TABELA DE PREÇOS */}
         {step === 0 && (
+          <SelecaoTabelaPreco
+            tabelasPreco={tabelasPreco}
+            loadingTabelas={loadingTabelas}
+            tabelaPrecoSelecionada={tabelaPrecoSelecionada}
+            onSelecionar={(t: TabelaPreco) => { onSelecionarTabelaPreco(t); setStep(1); }}
+            isMobile
+          />
+        )}
+
+        {/* STEP 1: CLIENTE */}
+        {step === 1 && (
           <div className="p-4 space-y-4">
             <div className="text-center py-2">
               <User className="h-8 w-8 text-blue-500 mx-auto mb-1" />
@@ -284,8 +352,8 @@ function MobileVendas({
           </div>
         )}
 
-        {/* STEP 1: PRODUTOS */}
-        {step === 1 && (
+        {/* STEP 2: PRODUTOS */}
+        {step === 2 && (
           <div className="p-4 space-y-3">
             {/* Botão adicionar produto */}
             <button
@@ -324,8 +392,6 @@ function MobileVendas({
                       <div className="flex items-center gap-3">
                         {/* Controle de quantidade */}
                         <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
-
-
                           <input
                             type="number"
                             min={0}
@@ -336,9 +402,7 @@ function MobileVendas({
                               handleQtdSet(item.tempId, e.target.value)
                             }
                             className="w-22 p-1 text-center text-sm font-black text-slate-800 bg-blue-400/25 rounded-md outline-none"
-                          />  
-
-
+                          />
                         </div>
                         <span className="text-[10px] text-slate-400">× {BRL(item.precoTabela)}</span>
                       </div>
@@ -364,7 +428,14 @@ function MobileVendas({
             <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>
               <DialogContent className="max-w-full max-h-[90vh] flex flex-col p-0 gap-0 m-2 rounded-2xl overflow-hidden">
                 <DialogHeader className="p-4 border-b bg-white flex-shrink-0">
-                  <DialogTitle className="text-sm font-black uppercase text-slate-700">Buscar Produto</DialogTitle>
+                  <DialogTitle className="text-sm font-black uppercase text-slate-700 flex items-center justify-between">
+                    <span>Buscar Produto</span>
+                    {tabelaPrecoSelecionada && (
+                      <Badge variant="outline" className="text-[9px] bg-violet-50 text-violet-700 border-violet-200">
+                        {tabelaPrecoSelecionada.nome}
+                      </Badge>
+                    )}
+                  </DialogTitle>
                   <div className="relative mt-2">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
@@ -388,7 +459,9 @@ function MobileVendas({
                       <div className="p-8 text-center text-xs text-slate-400">Carregando catálogo...</div>
                     ) : filteredProducts.length === 0 ? (
                       <div className="p-8 text-center text-xs text-slate-400">
-                        Nenhum produto encontrado para "{searchTerm}"
+                        {searchTerm
+                          ? `Nenhum produto encontrado para "${searchTerm}"`
+                          : "Nenhum produto disponível nesta tabela de preços"}
                       </div>
                     ) : (
                       filteredProducts.map((prod: Produto) => {
@@ -430,8 +503,8 @@ function MobileVendas({
           </div>
         )}
 
-        {/* STEP 2: PAGAMENTO */}
-        {step === 2 && (
+        {/* STEP 3: PAGAMENTO */}
+        {step === 3 && (
           <div className="p-4 space-y-4">
             <div className="text-center py-2">
               <CreditCard className="h-8 w-8 text-blue-500 mx-auto mb-1" />
@@ -487,12 +560,20 @@ function MobileVendas({
           </div>
         )}
 
-        {/* STEP 3: RESUMO */}
-        {step === 3 && (
+        {/* STEP 4: RESUMO */}
+        {step === 4 && (
           <div className="p-4 space-y-3">
             <div className="text-center py-2">
               <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-1" />
               <h2 className="text-sm font-black text-slate-700 uppercase">Confirmar Pedido</h2>
+            </div>
+
+            {/* Tabela de preços */}
+            <div className="bg-white rounded-xl border border-slate-200 p-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Tabela de Preços</p>
+              <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-violet-500" /> {tabelaPrecoSelecionada?.nome}
+              </p>
             </div>
 
             {/* Resumo do cliente */}
@@ -556,56 +637,58 @@ function MobileVendas({
       </div>
 
       {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-2xl z-30">
-        {step < 3 ? (
-          <div className="flex gap-2">
-            {step > 0 && (
+      {step > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-2xl z-30">
+          {step < 4 ? (
+            <div className="flex gap-2">
+              {step > 0 && (
+                <button
+                  onClick={() => setStep(step - 1)}
+                  className="h-12 px-4 border-2 border-slate-200 rounded-xl text-slate-600 font-bold text-sm flex items-center gap-1 active:scale-95 transition-transform"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Voltar
+                </button>
+              )}
               <button
-                onClick={() => setStep(step - 1)}
+                disabled={!canProceed[step]}
+                onClick={() => setStep(step + 1)}
+                className={`flex-1 h-12 rounded-xl font-bold text-sm uppercase flex items-center justify-center gap-2 transition-all active:scale-95 ${canProceed[step]
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
+              >
+                {step === 1 ? "Selecionar Produtos" : step === 2 ? "Pagamento" : "Revisar Pedido"}
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStep(3)}
                 className="h-12 px-4 border-2 border-slate-200 rounded-xl text-slate-600 font-bold text-sm flex items-center gap-1 active:scale-95 transition-transform"
               >
-                <ChevronLeft className="h-4 w-4" /> Voltar
+                <ChevronLeft className="h-4 w-4" />
               </button>
-            )}
-            <button
-              disabled={!canProceed[step]}
-              onClick={() => setStep(step + 1)}
-              className={`flex-1 h-12 rounded-xl font-bold text-sm uppercase flex items-center justify-center gap-2 transition-all active:scale-95 ${canProceed[step]
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
-            >
-              {step === 0 ? "Selecionar Produtos" : step === 1 ? "Pagamento" : "Revisar Pedido"}
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setStep(2)}
-              className="h-12 px-4 border-2 border-slate-200 rounded-xl text-slate-600 font-bold text-sm flex items-center gap-1 active:scale-95 transition-transform"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              disabled={isSubmitting}
-              onClick={() => handleFinalizarVenda('ORCAMENTO')}
-              className="flex-1 h-12 border-2 border-slate-700 bg-white rounded-xl text-slate-800 font-bold text-xs uppercase flex items-center justify-center gap-1 active:scale-95 transition-all"
-            >
-              <Save className="h-4 w-4" />
-              {isSubmitting ? "..." : "Orçamento"}
-            </button>
-            <button
-              disabled={isSubmitting}
-              onClick={() => handleFinalizarVenda('APROVADO')}
-              className="flex-1 h-12 bg-emerald-600 rounded-xl text-white font-bold text-xs uppercase flex items-center justify-center gap-1 active:scale-95 transition-all shadow-md"
-            >
-              <Send className="h-4 w-4" />
-              {isSubmitting ? "..." : "Faturar"}
-            </button>
-          </div>
-        )}
-      </div>
+              <button
+                disabled={isSubmitting}
+                onClick={() => handleFinalizarVenda('ORCAMENTO')}
+                className="flex-1 h-12 border-2 border-slate-700 bg-white rounded-xl text-slate-800 font-bold text-xs uppercase flex items-center justify-center gap-1 active:scale-95 transition-all"
+              >
+                <Save className="h-4 w-4" />
+                {isSubmitting ? "..." : "Orçamento"}
+              </button>
+              <button
+                disabled={isSubmitting}
+                onClick={() => handleFinalizarVenda('APROVADO')}
+                className="flex-1 h-12 bg-emerald-600 rounded-xl text-white font-bold text-xs uppercase flex items-center justify-center gap-1 active:scale-95 transition-all shadow-md"
+              >
+                <Send className="h-4 w-4" />
+                {isSubmitting ? "..." : "Faturar"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -616,7 +699,8 @@ function DesktopVendas({
   products, entidades, formasPagamento, loadingFormas, loading,
   itensVenda, setItensVenda, clienteSelecionado, setClienteSelecionado,
   formaPagamentoSelecionada, setFormaPagamentoSelecionada,
-  frete, setFrete, isSubmitting, handleFinalizarVenda, BRL, getEstoqueProduto
+  frete, setFrete, isSubmitting, handleFinalizarVenda, BRL, getEstoqueProduto,
+  tabelasPreco, loadingTabelas, tabelaPrecoSelecionada, onSelecionarTabelaPreco, onTrocarTabelaPreco
 }: any) {
   const [buscaCliente, setBuscaCliente] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -668,6 +752,21 @@ function DesktopVendas({
   const totalProdutos = itensVenda.reduce((acc: number, item: ItemVenda) => acc + item.totalLiquido, 0);
   const totalGeral = totalProdutos + frete;
 
+  // Enquanto nenhuma tabela de preços foi selecionada, exibe apenas a tela de seleção
+  if (!tabelaPrecoSelecionada) {
+    return (
+      <div className="bg-[#f0f2f5] min-h-screen font-sans text-slate-800">
+        <HeaderEnterprise />
+        <SelecaoTabelaPreco
+          tabelasPreco={tabelasPreco}
+          loadingTabelas={loadingTabelas}
+          tabelaPrecoSelecionada={tabelaPrecoSelecionada}
+          onSelecionar={onSelecionarTabelaPreco}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#f0f2f5] min-h-screen font-sans text-slate-800 pb-20">
       <HeaderEnterprise />
@@ -682,6 +781,10 @@ function DesktopVendas({
             <Badge variant="secondary" className="rounded-sm text-[10px] uppercase font-bold px-2 bg-blue-50 text-blue-700 border-blue-100">
               Em Digitação
             </Badge>
+            <Badge variant="outline" className="rounded-sm text-[10px] uppercase font-bold px-2 bg-violet-50 text-violet-700 border-violet-200 ml-2 flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              {tabelaPrecoSelecionada.nome}
+            </Badge>
             {formaPagamentoSelecionada && (
               <Badge variant="outline" className="rounded-sm text-[10px] uppercase font-bold px-2 bg-green-50 text-green-700 border-green-100 ml-2">
                 <CreditCard className="w-3 h-3 mr-1" />
@@ -690,6 +793,9 @@ function DesktopVendas({
             )}
           </div>
           <div className="flex gap-2">
+            <Button onClick={onTrocarTabelaPreco} variant="ghost" size="sm" className="h-8 text-xs font-bold uppercase text-slate-500 hover:text-red-600">
+              <X className="w-3 h-3 mr-1" /> Trocar Tabela
+            </Button>
             <Button onClick={() => handleFinalizarVenda('ORCAMENTO')} variant="outline" size="sm" className="h-8 text-xs font-bold uppercase text-slate-600 border-slate-300">
               <Save className="w-3 h-3 mr-2" /> Salvar Orçamento
             </Button>
@@ -775,6 +881,9 @@ function DesktopVendas({
                   <ShoppingCart className="h-4 w-4 text-slate-500" />
                   <span className="text-xs font-bold uppercase text-slate-700">Itens do Pedido</span>
                   <Badge variant="outline" className="text-[10px] h-5 px-1 bg-white ml-2">{itensVenda.length} Itens</Badge>
+                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-violet-50 text-violet-700 border-violet-200 ml-1 flex items-center gap-1">
+                    <Layers className="h-2.5 w-2.5" /> {tabelaPrecoSelecionada.nome}
+                  </Badge>
                 </div>
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
@@ -785,7 +894,7 @@ function DesktopVendas({
                   <DialogContent className="max-w-full p-0 gap-0 border-slate-200 shadow-2xl">
                     <DialogHeader className="p-4 border-b bg-slate-50">
                       <DialogTitle className="text-sm font-bold uppercase text-slate-700 flex justify-between items-center">
-                        <span>Busca Rápida de Produtos</span>
+                        <span>Busca Rápida de Produtos · {tabelaPrecoSelecionada.nome}</span>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">
                             {filteredProducts.filter((p: Produto) => getEstoqueProduto(p).disponivel > 0).length} com estoque
@@ -804,6 +913,10 @@ function DesktopVendas({
                     <ScrollArea className="h-[300px] bg-white">
                       {loading ? (
                         <div className="p-8 text-center text-xs text-slate-400 uppercase">Carregando catálogo...</div>
+                      ) : filteredProducts.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-slate-400 uppercase">
+                          Nenhum produto disponível nesta tabela de preços
+                        </div>
                       ) : (
                         <Table>
                           <TableHeader className="bg-slate-100 sticky top-0 z-10">
@@ -990,28 +1103,62 @@ export default function ComercialVendas() {
   const [itensVenda, setItensVenda] = useState<ItemVenda[]>([]);
   const [entidades, setEntidades] = useState<Entidade[]>([]);
   const [clienteSelecionado, setClienteSelecionado] = useState<Entidade | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [frete, setFrete] = useState(0);
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const [formaPagamentoSelecionada, setFormaPagamentoSelecionada] = useState<number | null>(null);
   const [loadingFormas, setLoadingFormas] = useState(true);
 
+  // --- TABELAS DE PREÇO ---
+  const [tabelasPreco, setTabelasPreco] = useState<TabelaPreco[]>([]);
+  const [loadingTabelas, setLoadingTabelas] = useState(true);
+  const [tabelaPrecoSelecionada, setTabelaPrecoSelecionada] = useState<TabelaPreco | null>(null);
+
   useEffect(() => { setVendedorId(getUserId()); }, []);
 
+  // Carrega as tabelas de preço disponíveis
   useEffect(() => {
+    const fetch_ = async () => {
+      try {
+        setLoadingTabelas(true);
+        const token = getToken();
+        if (!token) return;
+        const res = await fetch(`${API_URL}/tabelas-preco`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error();
+        const data: TabelaPreco[] = await res.json();
+        const ativas = data.filter((t) => t.ativo);
+        setTabelasPreco(ativas);
+      } catch { } finally { setLoadingTabelas(false); }
+    };
+    fetch_();
+  }, []);
+
+  // Carrega os produtos da tabela de preços selecionada
+  useEffect(() => {
+    if (!tabelaPrecoSelecionada) {
+      setProducts([]);
+      return;
+    }
+
     const fetch_ = async () => {
       try {
         setLoading(true);
         const token = getToken();
         if (!token) return;
-        const res = await fetch(`${API_URL}/produtos`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_URL}/tabelas-preco/${tabelaPrecoSelecionada.id}/produtos`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (!res.ok) throw new Error();
         setProducts(await res.json());
-      } catch { } finally { setLoading(false); }
+      } catch {
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetch_();
-  }, []);
+  }, [tabelaPrecoSelecionada]);
 
   useEffect(() => {
     const fetch_ = async () => {
@@ -1043,7 +1190,28 @@ export default function ComercialVendas() {
     fetch_();
   }, []);
 
+  // Seleciona a tabela de preços e limpa o pedido em andamento, caso exista
+  const handleSelecionarTabelaPreco = (tabela: TabelaPreco) => {
+    setTabelaPrecoSelecionada(tabela);
+    setItensVenda([]);
+  };
+
+  // Permite trocar a tabela de preços, descartando os itens já lançados
+  // (pois o sistema não permite misturar produtos de tabelas diferentes no mesmo pedido)
+  const handleTrocarTabelaPreco = () => {
+    if (itensVenda.length > 0) {
+      const confirmar = confirm(
+        "Trocar a tabela de preços irá remover todos os itens já adicionados ao pedido. Deseja continuar?"
+      );
+      if (!confirmar) return;
+    }
+    setTabelaPrecoSelecionada(null);
+    setItensVenda([]);
+    setProducts([]);
+  };
+
   const handleFinalizarVenda = async (status: 'ORCAMENTO' | 'APROVADO') => {
+    if (!tabelaPrecoSelecionada) { alert("Selecione uma tabela de preços antes de continuar."); return; }
     if (itensVenda.length === 0) { alert("Adicione pelo menos um item."); return; }
     if (!clienteSelecionado) { alert("Selecione um cliente."); return; }
     if (!formaPagamentoSelecionada) { alert("Selecione uma forma de pagamento."); return; }
@@ -1069,6 +1237,7 @@ export default function ComercialVendas() {
       alert(`Venda registrada como ${status} com sucesso!`);
       setItensVenda([]); setFrete(0); setClienteSelecionado(null);
       setFormaPagamentoSelecionada(formasPagamento[0]?.id || null);
+      // Mantém a tabela de preços selecionada para facilitar novos pedidos em sequência
     } catch (err: any) {
       alert("Falha ao salvar: " + err.message);
     } finally {
@@ -1089,7 +1258,10 @@ export default function ComercialVendas() {
     products, entidades, formasPagamento, loadingFormas, loading,
     itensVenda, setItensVenda, clienteSelecionado, setClienteSelecionado,
     formaPagamentoSelecionada, setFormaPagamentoSelecionada,
-    frete, setFrete, isSubmitting, handleFinalizarVenda, BRL, getEstoqueProduto
+    frete, setFrete, isSubmitting, handleFinalizarVenda, BRL, getEstoqueProduto,
+    tabelasPreco, loadingTabelas, tabelaPrecoSelecionada,
+    onSelecionarTabelaPreco: handleSelecionarTabelaPreco,
+    onTrocarTabelaPreco: handleTrocarTabelaPreco
   };
 
   if (isMobile) return <MobileVendas {...sharedProps} />;

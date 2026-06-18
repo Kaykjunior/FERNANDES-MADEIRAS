@@ -9,10 +9,11 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'https://reidasmadeiras.shop',   // Produção
-      'http://localhost:3000',        // Desenvolvimento local
-      'http://localhost:3001',        // Desenvolvimento local (porta alternativa)
-      'http://127.0.0.1:3000',        // IP local
-      'http://127.0.0.1:3001',        // IP local
+      'http://localhost:3066',        // Desenvolvimento local
+      'http://localhost:3066',        // Desenvolvimento local (porta alternativa)
+      'http://127.0.0.1:3066',        // IP local
+      'http://127.0.0.1:3066',  
+      'http://187.77.33.244:3066'      // IP local
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,

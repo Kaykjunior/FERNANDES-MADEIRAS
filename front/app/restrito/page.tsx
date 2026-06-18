@@ -65,7 +65,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="relative w-16 h-16">
               <Image
-                src="/logo3.png"
+                src="/logoFM.png"
                 alt="Fernandes Madeira"
                 fill
                 className="object-contain"

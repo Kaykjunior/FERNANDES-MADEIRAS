@@ -8,7 +8,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: [
-      'https://reidasmadeiras.shop',   // Produção
+      'http://fernandesmadeira.shop',
+      'http://www.fernandesmadeira.shop',
+      'http://api.fernandesmadeira.shop',   // Produção
+      'https://fernandesmadeira.shop',
+      'https://www.fernandesmadeira.shop',
+      'https://api.fernandesmadeira.shop',   // Produção
       'http://localhost:3066',        // Desenvolvimento local
       'http://localhost:3066',        // Desenvolvimento local (porta alternativa)
       'http://127.0.0.1:3066',        // IP local

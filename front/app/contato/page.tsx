@@ -13,6 +13,12 @@ export default function ContatosPage() {
       setor: "Consultor Comercial",
       whats: "5538999028181", 
       icon: <User className="w-6 h-6 text-[#064E3B]" />
+    },
+    {
+      nome: "André Luiz",
+      setor: "Consultor Comercial",
+      whats: "5538999994304", 
+      icon: <User className="w-6 h-6 text-[#064E3B]" />
     }
   ];
 
